@@ -11,10 +11,10 @@
 # hlsearch on (H) or off (h):
 ~h
 # Command Line History (newest to oldest):
+:wq
+|2,0,1754711499,,"wq"
 :q
 |2,0,1754711419,,"q"
-:wq
-|2,0,1754708059,,"wq"
 :q!
 |2,0,1754707515,,"q!"
 
@@ -27,26 +27,39 @@
 # Debug Line History (newest to oldest):
 
 # Registers:
+""-	CHAR	0
+	#
+|3,1,36,0,1,0,1754711495,"#"
 
 # File marks:
-'0  5  0  ~/.git/COMMIT_EDITMSG
-|4,48,5,0,1754711419,"~/.git/COMMIT_EDITMSG"
-'1  2  32  ~/.vscode/settings.json
-|4,49,2,32,1754708059,"~/.vscode/settings.json"
-'2  5  0  ~/.vscode/settings.json
-|4,50,5,0,1754707583,"~/.vscode/settings.json"
-'3  3  0  ~/.vscode/settings.json
-|4,51,3,0,1754707583,"~/.vscode/settings.json"
-'4  7  0  ~/.vscode/settings.json
-|4,52,7,0,1754707515,"~/.vscode/settings.json"
-'5  5  0  ~/.vscode/settings.json
-|4,53,5,0,1754707515,"~/.vscode/settings.json"
-'6  5  0  ~/.vscode/settings.json
-|4,54,5,0,1754707515,"~/.vscode/settings.json"
-'7  3  0  ~/.vscode/settings.json
-|4,55,3,0,1754707515,"~/.vscode/settings.json"
+'0  12  0  ~/.git/COMMIT_EDITMSG
+|4,48,12,0,1754711499,"~/.git/COMMIT_EDITMSG"
+'1  5  0  ~/.git/COMMIT_EDITMSG
+|4,49,5,0,1754711419,"~/.git/COMMIT_EDITMSG"
+'2  5  0  ~/.git/COMMIT_EDITMSG
+|4,50,5,0,1754711419,"~/.git/COMMIT_EDITMSG"
+'3  2  32  ~/.vscode/settings.json
+|4,51,2,32,1754708059,"~/.vscode/settings.json"
+'4  5  0  ~/.vscode/settings.json
+|4,52,5,0,1754707583,"~/.vscode/settings.json"
+'5  3  0  ~/.vscode/settings.json
+|4,53,3,0,1754707583,"~/.vscode/settings.json"
+'6  7  0  ~/.vscode/settings.json
+|4,54,7,0,1754707515,"~/.vscode/settings.json"
+'7  5  0  ~/.vscode/settings.json
+|4,55,5,0,1754707515,"~/.vscode/settings.json"
+'8  5  0  ~/.vscode/settings.json
+|4,56,5,0,1754707515,"~/.vscode/settings.json"
+'9  3  0  ~/.vscode/settings.json
+|4,57,3,0,1754707515,"~/.vscode/settings.json"
 
 # Jumplist (newest first):
+-'  12  0  ~/.git/COMMIT_EDITMSG
+|4,39,12,0,1754711499,"~/.git/COMMIT_EDITMSG"
+-'  1  0  ~/.git/COMMIT_EDITMSG
+|4,39,1,0,1754711482,"~/.git/COMMIT_EDITMSG"
+-'  5  0  ~/.git/COMMIT_EDITMSG
+|4,39,5,0,1754711419,"~/.git/COMMIT_EDITMSG"
 -'  5  0  ~/.git/COMMIT_EDITMSG
 |4,39,5,0,1754711419,"~/.git/COMMIT_EDITMSG"
 -'  1  0  ~/.git/COMMIT_EDITMSG
@@ -55,6 +68,14 @@
 |4,39,2,32,1754708059,"~/.vscode/settings.json"
 -'  2  32  ~/.vscode/settings.json
 |4,39,2,32,1754708059,"~/.vscode/settings.json"
+-'  2  32  ~/.vscode/settings.json
+|4,39,2,32,1754708059,"~/.vscode/settings.json"
+-'  2  32  ~/.vscode/settings.json
+|4,39,2,32,1754708059,"~/.vscode/settings.json"
+-'  1  0  ~/.vscode/settings.json
+|4,39,1,0,1754707789,"~/.vscode/settings.json"
+-'  1  0  ~/.vscode/settings.json
+|4,39,1,0,1754707789,"~/.vscode/settings.json"
 -'  1  0  ~/.vscode/settings.json
 |4,39,1,0,1754707789,"~/.vscode/settings.json"
 -'  1  0  ~/.vscode/settings.json
@@ -67,6 +88,18 @@
 |4,39,5,0,1754707583,"~/.vscode/settings.json"
 -'  3  0  ~/.vscode/settings.json
 |4,39,3,0,1754707583,"~/.vscode/settings.json"
+-'  5  0  ~/.vscode/settings.json
+|4,39,5,0,1754707583,"~/.vscode/settings.json"
+-'  3  0  ~/.vscode/settings.json
+|4,39,3,0,1754707583,"~/.vscode/settings.json"
+-'  5  0  ~/.vscode/settings.json
+|4,39,5,0,1754707583,"~/.vscode/settings.json"
+-'  3  0  ~/.vscode/settings.json
+|4,39,3,0,1754707583,"~/.vscode/settings.json"
+-'  1  0  ~/.vscode/settings.json
+|4,39,1,0,1754707543,"~/.vscode/settings.json"
+-'  1  0  ~/.vscode/settings.json
+|4,39,1,0,1754707543,"~/.vscode/settings.json"
 -'  1  0  ~/.vscode/settings.json
 |4,39,1,0,1754707543,"~/.vscode/settings.json"
 -'  1  0  ~/.vscode/settings.json
@@ -83,6 +116,22 @@
 |4,39,5,0,1754707515,"~/.vscode/settings.json"
 -'  3  0  ~/.vscode/settings.json
 |4,39,3,0,1754707515,"~/.vscode/settings.json"
+-'  7  0  ~/.vscode/settings.json
+|4,39,7,0,1754707515,"~/.vscode/settings.json"
+-'  5  0  ~/.vscode/settings.json
+|4,39,5,0,1754707515,"~/.vscode/settings.json"
+-'  3  0  ~/.vscode/settings.json
+|4,39,3,0,1754707515,"~/.vscode/settings.json"
+-'  7  0  ~/.vscode/settings.json
+|4,39,7,0,1754707515,"~/.vscode/settings.json"
+-'  5  0  ~/.vscode/settings.json
+|4,39,5,0,1754707515,"~/.vscode/settings.json"
+-'  3  0  ~/.vscode/settings.json
+|4,39,3,0,1754707515,"~/.vscode/settings.json"
+-'  1  0  ~/.vscode/settings.json
+|4,39,1,0,1754707412,"~/.vscode/settings.json"
+-'  1  0  ~/.vscode/settings.json
+|4,39,1,0,1754707412,"~/.vscode/settings.json"
 -'  1  0  ~/.vscode/settings.json
 |4,39,1,0,1754707412,"~/.vscode/settings.json"
 -'  1  0  ~/.vscode/settings.json
@@ -91,8 +140,15 @@
 # History of marks within files (newest to oldest):
 
 > ~/.git/COMMIT_EDITMSG
-	*	1754711416	0
-	"	5	0
+	*	1754711495	0
+	"	12	0
+	.	12	0
+	+	7	0
+	+	8	0
+	+	9	0
+	+	10	0
+	+	11	0
+	+	12	0
 
 > ~/.vscode/settings.json
 	*	1754708051	0
