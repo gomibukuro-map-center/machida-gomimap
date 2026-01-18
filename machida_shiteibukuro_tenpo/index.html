@@ -1,174 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>町田市ごみ袋販売店マップ</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>町田市ごみ袋マップ</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗑️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗑️</text></svg>">
     <script>
       (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Load only the libraries you need."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
-        key: "AIzaSyDcgOu7N-b-YPPIh_nO-14tU1OyHhCAXvk",
+        key: "AIzaSyDcgOu7N-b-YPPIh_nO-14tU1OyHhCAXvk", // APIキー
         v: "weekly",
       });
     </script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    
     <style>
-        #map { height: 600px; width: 100%; }
-        .info-window { line-height: 1.5; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #f4f4f4; }
+        h2 { font-size: 1rem; padding: 10px; margin: 0; background: #1a73e8; color: white; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); position: relative; z-index: 10; }
+        #map { height: calc(100vh - 42px); width: 100%; }
+        
+        .custom-map-control {
+            background-color: #fff; border: 0; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            margin: 10px; padding: 0 15px; font-weight: bold; height: 40px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+
+        /* 吹き出しの中身がズレないための強制リセット */
+        .gm-style-iw-d { overflow: hidden !important; max-height: none !important; padding: 0 !important; }
+        .gm-style-iw-c { padding: 12px !important; border-radius: 8px !important; }
     </style>
 </head>
 <body>
-    <h2>町田市 指定収集袋・処理券 取扱店マップ</h2>
+    <h2>町田市 指定収集袋 取扱店マップ</h2>
     <div id="map"></div>
 
     <script>
-        // 3. 地図の初期化関数を最新形式に対応させる
+        function renderCell(value) {
+            const isOk = value === '○';
+            const bgColor = isOk ? '#fff9c4' : '#ffffff';
+            const textColor = isOk ? '#d32f2f' : '#999999';
+            return `<td style="border: 1px solid #ccc; padding: 12px 0; background: ${bgColor}; color: ${textColor}; font-weight: bold; font-size: 20px; text-align: center; line-height: 1;">${value || '×'}</td>`;
+        }
+
         async function initMap() {
-            const { Map } = await google.maps.importLibrary("maps");
-            const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-            const { Geocoder } = await google.maps.importLibrary("geocoding");
+            try {
+                const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+                const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
-            const map = new Map(document.getElementById('map'), {
-                zoom: 12,
-                center: { lat: 35.5467, lng: 139.4464 },
-                mapId: "DEMO_MAP_ID",
-            });
+                const map = new Map(document.getElementById('map'), {
+                    zoom: 14,
+                    center: { lat: 35.5467, lng: 139.4464 },
+                    mapId: "DEMO_MAP_ID",
+                    gestureHandling: 'greedy',
+                    disableDefaultUI: false
+                });
 
-            const geocoder = new Geocoder();
-            const GAS_URL = 'https://script.google.com/macros/s/AKfycby2X-m4B3-HgkWJelQk8ZOLb40hwMGDncJaXjL920IaUXpe116qh9ykeDcO5WYHlDAd8A/exec'; 
+                const infoWindow = new InfoWindow();
+                map.addListener('click', () => infoWindow.close());
 
-            // fetchの開始
-            fetch(GAS_URL, {
-                redirect: 'follow', // GASのリダイレクトを追いかける
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('ネットワーク応答が正常ではありません');
-                return response.json(); // ここで1回だけjsonに変換すればOK
-            })
-            .then(data => {
-                console.log("データ受信成功！:", data.length, "件");
-                                
-                // fetchでデータを受け取った後の処理部分
+                // 現在地ボタン
+                const locationButton = document.createElement("button");
+                locationButton.innerHTML = "📍 現在地";
+                locationButton.classList.add("custom-map-control");
+                map.controls[google.maps.ControlPosition.TOP_RIGHT].push(locationButton);
+
+                locationButton.addEventListener("click", () => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+                            new AdvancedMarkerElement({
+                                map, position: pos,
+                                content: new PinElement({ background: "#4285F4", borderColor: "white", glyphColor: "white", scale: 0.8 }).element
+                            });
+                            map.setCenter(pos);
+                            map.setZoom(16);
+                        }, () => alert("位置情報の取得に失敗しました。"));
+                    }
+                });
+
+                const GAS_URL = 'https://script.google.com/macros/s/AKfycby2X-m4B3-HgkWJelQk8ZOLb40hwMGDncJaXjL920IaUXpe116qh9ykeDcO5WYHlDAd8A/exec';
+
+                const response = await fetch(GAS_URL, { redirect: 'follow' });
+                const data = await response.json();
+
                 data.forEach(shop => {
                     if (shop.lat && shop.lng) {
-                        const position = { 
-                            lat: parseFloat(shop.lat), 
-                            lng: parseFloat(shop.lng) 
-                        };
-
-                        const marker = new google.maps.marker.AdvancedMarkerElement({
+                        const marker = new AdvancedMarkerElement({
                             map: map,
-                            position: position,
+                            position: { lat: parseFloat(shop.lat), lng: parseFloat(shop.lng) },
                             title: shop['店舗名']
                         });
 
-                        // セルの色付け処理用の補助関数（infoWindow定義の前に置いてください）
-                        function renderCell(value) {
-                            const isOk = value === '○';
-                            const bgColor = isOk ? '#fff9c4' : '#ffffff'; // ○なら薄い黄色、×なら白
-                            const textColor = isOk ? '#d32f2f' : '#999999'; // ○なら濃い赤、×ならグレー
-                            const fontWeight = isOk ? 'bold' : 'normal';
-                            return `<td style="border: 1px solid #ccc; padding: 10px 2px; background: ${bgColor}; color: ${textColor}; font-weight: ${fontWeight}; font-size: 14px;">${value || '×'}</td>`;
-                        }
-
-                        // 吹き出し（InfoWindow）の中身を作成
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: `
-                                <div style="padding: 10px; max-width: 350px; font-family: 'Helvetica Neue', Arial, sans-serif;">
-                                    <h3 style="margin: 0 0 8px; font-size: 16px; color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 5px;">${shop['店舗名']}</h3>
-                                    <p style="margin: 5px 0; font-size: 13px;"><b>📍 住所:</b> ${shop['住所']}</p>
-                                    <p style="margin: 5px 0 12px; font-size: 13px;"><b>📞 電話:</b> ${shop['電話番号']}</p>
+                        marker.addListener('click', () => {
+                            const encodedAddr = encodeURIComponent(shop['住所']);
+                            const routeUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddr}`;
+                            
+                            infoWindow.setContent(`
+                                <div style="width: 270px; margin: 0; padding: 0; font-family: sans-serif; overflow: hidden;">
+                                    <h3 style="margin: 0 0 5px; font-size: 15px; color: #1a73e8;">${shop['店舗名']}</h3>
+                                    <p style="margin: 0 0 10px; font-size: 12px; color: #666;">📞 ${shop['電話番号']}</p>
                                     
-                                    <div style="overflow-x: auto;">
-                                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; border: 1px solid #ccc;">
-                                            <thead>
-                                                <tr style="background: #eeeeee; color: #333;">
-                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">可燃ごみ</th>
-                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">不燃ごみ</th>
-                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">プラ専用</th>
-                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">粗大ごみ<br>処理券</th>
-                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">事業用<br>ごみ袋</th>
-                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">不燃ごみ<br>ばら売り</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    ${renderCell(shop['燃やせるごみ袋'])}
-                                                    ${renderCell(shop['燃やせないごみ袋'])}
-                                                    ${renderCell(shop['プラスチック専用袋'])}
-                                                    ${renderCell(shop['粗大ごみ処理券'])}
-                                                    ${renderCell(shop['事業用ごみ袋'])}
-                                                    ${renderCell(shop['燃やせないごみ袋（大）ばら売り'])}
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <table style="width: 100%; table-layout: fixed; border-collapse: collapse; border: 1px solid #ccc; margin-bottom: 12px;">
+                                        <thead>
+                                            <tr style="background: #f8f9fa; font-size: 9px; color: #333;">
+                                                <th style="border:1px solid #ccc; padding: 5px 0; font-weight: normal;">可燃ごみ</th>
+                                                <th style="border:1px solid #ccc; padding: 5px 0; font-weight: normal;">不燃ごみ</th>
+                                                <th style="border:1px solid #ccc; padding: 5px 0; font-weight: normal;">プラ専用</th>
+                                                <th style="border:1px solid #ccc; padding: 4px 0; font-weight: normal;">粗大ごみ<br>処理券</th>
+                                                <th style="border:1px solid #ccc; padding: 4px 0; font-weight: normal;">事業用<br>ごみ袋</th>
+                                                <th style="border:1px solid #ccc; padding: 4px 0; font-weight: normal;">不燃ごみ<br>ばら売り</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                ${renderCell(shop['燃やせるごみ袋'])}
+                                                ${renderCell(shop['燃やせないごみ袋'])}
+                                                ${renderCell(shop['プラスチック専用袋'])}
+                                                ${renderCell(shop['粗大ごみ処理券'])}
+                                                ${renderCell(shop['事業用ごみ袋'])}
+                                                ${renderCell(shop['燃やせないごみ袋（大）ばら売り'])}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    
+                                    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px dotted #ccc; padding-top: 10px;">
+                                        <p style="margin: 0; font-size: 10px; color: #666; flex: 1; padding-right: 8px;">📍 ${shop['住所']}</p>
+                                        <a href="${routeUrl}" target="_blank" style="background: #1a73e8; color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; white-space: nowrap;">🚗 ルート</a>
                                     </div>
                                 </div>
-                            `
-                        });
-                        // ピンをクリックした時に吹き出しを開く
-                        marker.addListener('click', () => {
-                            // 他の吹き出しが開いていたら閉じる（オプション）
-                            // infoWindow.close(); 
+                            `);
                             infoWindow.open(map, marker);
                         });
                     }
                 });
-                console.log("400件以上のピンを瞬時に配置しました");
-            })
-            .catch(error => {
-                console.error("詳細なエラーログ:", error);
-            });
+            } catch (error) {
+                console.error("Map initialization failed:", error);
+            }
         }
-
-        // ピンを立てる関数（情報ウィンドウも追加しました）
-        async function placeMarkerWithDelay(geocoder, map, shop, index) {
-            const address = "東京都町田市" + shop['住所'];
-            
-            geocoder.geocode({ address: address }, (results, status) => {
-                if (status === 'OK') {
-                    const marker = new google.maps.marker.AdvancedMarkerElement({
-                        map: map,
-                        position: results[0].geometry.location,
-                        title: shop['店舗名']
-                    });
-
-                    // クリックしたら詳細が出るように設定
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `
-                            <div style="padding:10px;">
-                                <strong>${shop['店舗名']}</strong><br>
-                                住所: ${shop['住所']}<br>
-                                電話: ${shop['電話番号']}<br>
-                                <hr>
-                                販売：${shop['燃やせるごみ袋'] === '○' ? '🛍袋 ' : ''}
-                                    ${shop['粗大ごみ処理券'] === '○' ? '🎫処理券' : ''}
-                            </div>`
-                    });
-
-                    marker.addListener('click', () => {
-                        infoWindow.open(map, marker);
-                    });
-
-                    if (index % 10 === 0) console.log(`${index}件目のピンを設置中...`);
-                } else if (status === 'OVER_QUERY_LIMIT') {
-                    console.error("制限超過！少し待機時間を増やしてください。");
-                }
-            });
-        }
-
-        function geocodeAddress(geocoder, map, shop) {
-            const address = "東京都町田市" + shop['所在地'];
-            geocoder.geocode({ address: address }, (results, status) => {
-                if (status === 'OK') {
-                    new google.maps.marker.AdvancedMarkerElement({
-                        map: map,
-                        position: results[0].geometry.location,
-                        title: shop['名称']
-                    });
-                }
-            });
-        }
-
         initMap();
     </script>
 </body>
