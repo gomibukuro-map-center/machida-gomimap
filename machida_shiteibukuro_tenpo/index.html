@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>町田市ごみ袋販売店マップ</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDcgOu7N-b-YPPIh_nO-14tU1OyHhCAXvk"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        #map { height: 600px; width: 100%; }
+        .info-window { line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <h2>町田市 指定収集袋・処理券 取扱店マップ</h2>
+    <div id="map"></div>
+
+    <script>
+        const CSV_URL = 'https://www.city.machida.tokyo.jp/shisei/opendata/shisetsu/shiteibukuro-shoriken-ichiran.files/shiteibukuro_tenpo.csv';
+
+        async function initMap() {
+            // 町田市役所付近を中心に地図を初期化
+            const map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 13,
+                center: { lat: 35.5467, lng: 139.4464 }
+            });
+
+            const geocoder = new google.maps.Geocoder();
+
+            // CSVを取得してパース
+            Papa.parse(CSV_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    results.data.forEach(shop => {
+                        if (shop['所在地']) {
+                            // 住所からピンを立てる
+                            geocodeAddress(geocoder, map, shop);
+                        }
+                    });
+                }
+            });
+        }
+
+        function geocodeAddress(geocoder, map, shop) {
+            const address = "東京都町田市" + shop['所在地'];
+            geocoder.geocode({ address: address }, (results, status) => {
+                if (status === 'OK') {
+                    const marker = new google.maps.Marker({
+                        map: map,
+                        position: results[0].geometry.location,
+                        title: shop['名称']
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div class="info-window">
+                                <strong>${shop['名称']}</strong><br>
+                                住所: ${shop['所在地']}<br>
+                                取扱: ${shop['指定収集袋'] === '○' ? '🛍指定袋 ' : ''} 
+                                      ${shop['粗大ごみ処理券'] === '○' ? '🎫処理券' : ''}
+                            </div>`
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(map, marker);
+                    });
+                }
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
