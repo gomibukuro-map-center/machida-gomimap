@@ -28,43 +28,133 @@
             const { Geocoder } = await google.maps.importLibrary("geocoding");
 
             const map = new Map(document.getElementById('map'), {
-                zoom: 13,
+                zoom: 12,
                 center: { lat: 35.5467, lng: 139.4464 },
                 mapId: "DEMO_MAP_ID",
             });
 
             const geocoder = new Geocoder();
-            const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzmxpYinrqfH8ar2sxf77ku-OJ93QdYLHwMN3daj8XC_cHGHUbC3Tf0ATtU0qzvt2t-w/exec'; 
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycby2X-m4B3-HgkWJelQk8ZOLb40hwMGDncJaXjL920IaUXpe116qh9ykeDcO5WYHlDAd8A/exec'; 
 
-            // fetchを使ってGASからJSONデータを取得
-            fetch(GAS_URL)
-                .then(response => response.json())
-                .then(data => {
-                    console.log("GASから届いたデータ:", data[0]); // 文字化けしてないかチェック！
+            // fetchの開始
+            fetch(GAS_URL, {
+                redirect: 'follow', // GASのリダイレクトを追いかける
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('ネットワーク応答が正常ではありません');
+                return response.json(); // ここで1回だけjsonに変換すればOK
+            })
+            .then(data => {
+                console.log("データ受信成功！:", data.length, "件");
+                                
+                // fetchでデータを受け取った後の処理部分
+                data.forEach(shop => {
+                    if (shop.lat && shop.lng) {
+                        const position = { 
+                            lat: parseFloat(shop.lat), 
+                            lng: parseFloat(shop.lng) 
+                        };
 
-                    // 負荷軽減のため最初の10件でテスト
-                    data.slice(0, 10).forEach(shop => {
-                        const name = shop['店舗名'];
-                        const address = shop['住所'];
-                        
-                        if (address) {
-                            console.log("解析中:", name, address);
-                            geocoder.geocode({ address: "東京都町田市" + address }, (results, status) => {
-                                if (status === 'OK') {
-                                    new google.maps.marker.AdvancedMarkerElement({
-                                        map: map,
-                                        position: results[0].geometry.location,
-                                        title: name
-                                    });
-                                    console.log("ピン設置:", name);
-                                }
-                            });
+                        const marker = new google.maps.marker.AdvancedMarkerElement({
+                            map: map,
+                            position: position,
+                            title: shop['店舗名']
+                        });
+
+                        // セルの色付け処理用の補助関数（infoWindow定義の前に置いてください）
+                        function renderCell(value) {
+                            const isOk = value === '○';
+                            const bgColor = isOk ? '#fff9c4' : '#ffffff'; // ○なら薄い黄色、×なら白
+                            const textColor = isOk ? '#d32f2f' : '#999999'; // ○なら濃い赤、×ならグレー
+                            const fontWeight = isOk ? 'bold' : 'normal';
+                            return `<td style="border: 1px solid #ccc; padding: 10px 2px; background: ${bgColor}; color: ${textColor}; font-weight: ${fontWeight}; font-size: 14px;">${value || '×'}</td>`;
                         }
-                    });
-                })
-                .catch(error => console.error("データ取得エラー:", error));
+
+                        // 吹き出し（InfoWindow）の中身を作成
+                        const infoWindow = new google.maps.InfoWindow({
+                            content: `
+                                <div style="padding: 10px; max-width: 350px; font-family: 'Helvetica Neue', Arial, sans-serif;">
+                                    <h3 style="margin: 0 0 8px; font-size: 16px; color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 5px;">${shop['店舗名']}</h3>
+                                    <p style="margin: 5px 0; font-size: 13px;"><b>📍 住所:</b> ${shop['住所']}</p>
+                                    <p style="margin: 5px 0 12px; font-size: 13px;"><b>📞 電話:</b> ${shop['電話番号']}</p>
+                                    
+                                    <div style="overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; border: 1px solid #ccc;">
+                                            <thead>
+                                                <tr style="background: #eeeeee; color: #333;">
+                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">可燃ごみ</th>
+                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">不燃ごみ</th>
+                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">プラ専用</th>
+                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">粗大ごみ<br>処理券</th>
+                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">事業用<br>ごみ袋</th>
+                                                    <th style="border: 1px solid #ccc; padding: 6px 2px; min-width: 45px;">不燃ごみ<br>ばら売り</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    ${renderCell(shop['燃やせるごみ袋'])}
+                                                    ${renderCell(shop['燃やせないごみ袋'])}
+                                                    ${renderCell(shop['プラスチック専用袋'])}
+                                                    ${renderCell(shop['粗大ごみ処理券'])}
+                                                    ${renderCell(shop['事業用ごみ袋'])}
+                                                    ${renderCell(shop['燃やせないごみ袋（大）ばら売り'])}
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            `
+                        });
+                        // ピンをクリックした時に吹き出しを開く
+                        marker.addListener('click', () => {
+                            // 他の吹き出しが開いていたら閉じる（オプション）
+                            // infoWindow.close(); 
+                            infoWindow.open(map, marker);
+                        });
+                    }
+                });
+                console.log("400件以上のピンを瞬時に配置しました");
+            })
+            .catch(error => {
+                console.error("詳細なエラーログ:", error);
+            });
         }
 
+        // ピンを立てる関数（情報ウィンドウも追加しました）
+        async function placeMarkerWithDelay(geocoder, map, shop, index) {
+            const address = "東京都町田市" + shop['住所'];
+            
+            geocoder.geocode({ address: address }, (results, status) => {
+                if (status === 'OK') {
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
+                        map: map,
+                        position: results[0].geometry.location,
+                        title: shop['店舗名']
+                    });
+
+                    // クリックしたら詳細が出るように設定
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="padding:10px;">
+                                <strong>${shop['店舗名']}</strong><br>
+                                住所: ${shop['住所']}<br>
+                                電話: ${shop['電話番号']}<br>
+                                <hr>
+                                販売：${shop['燃やせるごみ袋'] === '○' ? '🛍袋 ' : ''}
+                                    ${shop['粗大ごみ処理券'] === '○' ? '🎫処理券' : ''}
+                            </div>`
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(map, marker);
+                    });
+
+                    if (index % 10 === 0) console.log(`${index}件目のピンを設置中...`);
+                } else if (status === 'OVER_QUERY_LIMIT') {
+                    console.error("制限超過！少し待機時間を増やしてください。");
+                }
+            });
+        }
 
         function geocodeAddress(geocoder, map, shop) {
             const address = "東京都町田市" + shop['所在地'];
