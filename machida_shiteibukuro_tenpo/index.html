@@ -2,8 +2,15 @@
 <html>
 <head>
     <title>町田市ごみ袋販売店マップ</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDcgOu7N-b-YPPIh_nO-14tU1OyHhCAXvk"></script>
+    <script>
+      (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Load only the libraries you need."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+        key: "AIzaSyDcgOu7N-b-YPPIh_nO-14tU1OyHhCAXvk",
+        v: "weekly",
+      });
+    </script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
     <style>
         #map { height: 600px; width: 100%; }
         .info-window { line-height: 1.5; }
@@ -14,60 +21,136 @@
     <div id="map"></div>
 
     <script>
-        const CSV_URL = 'https://www.city.machida.tokyo.jp/shisei/opendata/shisetsu/shiteibukuro-shoriken-ichiran.files/shiteibukuro_tenpo.csv';
-
+        // 3. 地図の初期化関数を最新形式に対応させる
         async function initMap() {
-            // 町田市役所付近を中心に地図を初期化
-            const map = new google.maps.Map(document.getElementById('map'), {
+            // ライブラリのロード（省略せず記述）
+            const { Map } = await google.maps.importLibrary("maps");
+            const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+            const { Geocoder } = await google.maps.importLibrary("geocoding");
+
+            const map = new Map(document.getElementById('map'), {
                 zoom: 13,
-                center: { lat: 35.5467, lng: 139.4464 }
+                center: { lat: 35.5467, lng: 139.4464 },
+                mapId: "DEMO_MAP_ID",
             });
 
-            const geocoder = new google.maps.Geocoder();
+            const geocoder = new Geocoder();
+            // 町田市のURLの前に、CORS回避用のプロキシURLを付け足します
+            const CSV_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.city.machida.tokyo.jp/shisei/opendata/shisetsu/shiteibukuro-shoriken-ichiran.files/shiteibukuro_tenpo.csv');
 
-            // CSVを取得してパース
             Papa.parse(CSV_URL, {
+
                 download: true,
                 header: true,
+                encoding: "Shift-JIS", // ← これを追加！
                 complete: function(results) {
-                    results.data.forEach(shop => {
-                        if (shop['所在地']) {
-                            // 住所からピンを立てる
-                            geocodeAddress(geocoder, map, shop);
+
+                    Papa.parse(CSV_URL, {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        encoding: "Shift-JIS", // ここで強力に指定
+                        complete: function(results) {
+                            // もしこれでも化けるなら、もう一つの文字コード「MS932」を試す
+                            console.log("自動更新データ取得:", results.data[0]);
+                            
+                            results.data.forEach(shop => {
+                                if (shop['所在地']) {
+                                    geocodeAddress(geocoder, map, shop);
+                                }
+                            });
                         }
                     });
+
+                    // Papa.parse(CSV_URL, {
+                    //     download: true,
+                    //     header: false, // ← あえて false にして、1行目もデータとして扱う
+                    //     complete: function(results) {
+                    //         // 0番目がNo、1番目が名称、2番目が住所...という順番で指定
+                    //         results.data.slice(1).forEach(row => { 
+                    //             const name = row[1];    // 2列目：名称
+                    //             const address = row[2]; // 3列目：所在地
+                                
+                    //             if (address) {
+                    //                 // geocode処理へ...
+                    //                 console.log("読み込み中:", name, address);
+                    //             }
+                    //         });
+                    //     }
+                    // });
+
+                    // console.log("取得データサンプル:", results.data[0]);
+
+                    // // 負荷を避けるため、まずは最初の5件だけでテスト
+                    // results.data.slice(0, 5).forEach(shop => {
+                    //     if (shop['所在地']) {
+                    //         const address = "東京都町田市" + shop['所在地'];
+                    //         geocoder.geocode({ address: address }, (results, status) => {
+                    //             if (status === 'OK') {
+                    //                 new google.maps.marker.AdvancedMarkerElement({
+                    //                     map: map,
+                    //                     position: results[0].geometry.location,
+                    //                     title: shop['名称']
+                    //                 });
+                    //                 console.log("ピンを立てました:", shop['名称']);
+                    //             } else {
+                    //                 console.error("ジオコーディング失敗:", status, address);
+                    //             }
+                    //         });
+                    //     }
+                    // });
                 }
             });
         }
+
+
+        // // 3. 地図の初期化関数を最新形式に対応させる
+        // async function initMap() {
+        //     // 必要なライブラリをロード
+        //     const { Map } = await google.maps.importLibrary("maps");
+        //     const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+        //     const { Geocoder } = await google.maps.importLibrary("geocoding");
+
+        //     const map = new Map(document.getElementById('map'), {
+        //         zoom: 13,
+        //         center: { lat: 35.5467, lng: 139.4464 },
+        //         mapId: "DEMO_MAP_ID", // AdvancedMarkerを使う場合に必要（適当な文字列でOK）
+        //     });
+
+        //     const geocoder = new Geocoder();
+
+        //     // ここから下（CSV取得とループ処理）は前のコードと同じでOK
+        //     // ※CSV_URL は GASのURL または ローカルファイル名に書き換えてください
+        //     const CSV_URL = 'https://script.google.com/macros/s/AKfycbxFtdytsEDxmCEWyUpAMG8Dn2f9W8OrNuZ_iS6i7xIrq2u4CPkgGKs9XxOlAyypVv8C_A/exec'; 
+
+        //     Papa.parse(CSV_URL, {
+        //         download: true,
+        //         header: true,
+        //         complete: function(results) {
+        //             // テスト用に最初の10件だけで試すのがおすすめ
+        //             results.data.slice(0, 10).forEach(shop => {
+        //                 if (shop['所在地']) {
+        //                     geocodeAddress(geocoder, map, shop);
+        //                 }
+        //             });
+        //         }
+        //     });
+        // }
 
         function geocodeAddress(geocoder, map, shop) {
             const address = "東京都町田市" + shop['所在地'];
             geocoder.geocode({ address: address }, (results, status) => {
                 if (status === 'OK') {
-                    const marker = new google.maps.Marker({
+                    new google.maps.marker.AdvancedMarkerElement({
                         map: map,
                         position: results[0].geometry.location,
                         title: shop['名称']
-                    });
-
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `
-                            <div class="info-window">
-                                <strong>${shop['名称']}</strong><br>
-                                住所: ${shop['所在地']}<br>
-                                取扱: ${shop['指定収集袋'] === '○' ? '🛍指定袋 ' : ''} 
-                                      ${shop['粗大ごみ処理券'] === '○' ? '🎫処理券' : ''}
-                            </div>`
-                    });
-
-                    marker.addListener('click', () => {
-                        infoWindow.open(map, marker);
                     });
                 }
             });
         }
 
-        window.onload = initMap;
+        initMap();
     </script>
 </body>
 </html>
