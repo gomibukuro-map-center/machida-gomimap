@@ -23,7 +23,6 @@
     <script>
         // 3. 地図の初期化関数を最新形式に対応させる
         async function initMap() {
-            // ライブラリのロード（省略せず記述）
             const { Map } = await google.maps.importLibrary("maps");
             const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
             const { Geocoder } = await google.maps.importLibrary("geocoding");
@@ -35,107 +34,37 @@
             });
 
             const geocoder = new Geocoder();
-            // 町田市のURLの前に、CORS回避用のプロキシURLを付け足します
-            const CSV_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.city.machida.tokyo.jp/shisei/opendata/shisetsu/shiteibukuro-shoriken-ichiran.files/shiteibukuro_tenpo.csv');
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzmxpYinrqfH8ar2sxf77ku-OJ93QdYLHwMN3daj8XC_cHGHUbC3Tf0ATtU0qzvt2t-w/exec'; 
 
-            Papa.parse(CSV_URL, {
+            // fetchを使ってGASからJSONデータを取得
+            fetch(GAS_URL)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("GASから届いたデータ:", data[0]); // 文字化けしてないかチェック！
 
-                download: true,
-                header: true,
-                encoding: "Shift-JIS", // ← これを追加！
-                complete: function(results) {
-
-                    Papa.parse(CSV_URL, {
-                        download: true,
-                        header: true,
-                        skipEmptyLines: true,
-                        encoding: "Shift-JIS", // ここで強力に指定
-                        complete: function(results) {
-                            // もしこれでも化けるなら、もう一つの文字コード「MS932」を試す
-                            console.log("自動更新データ取得:", results.data[0]);
-                            
-                            results.data.forEach(shop => {
-                                if (shop['所在地']) {
-                                    geocodeAddress(geocoder, map, shop);
+                    // 負荷軽減のため最初の10件でテスト
+                    data.slice(0, 10).forEach(shop => {
+                        const name = shop['店舗名'];
+                        const address = shop['住所'];
+                        
+                        if (address) {
+                            console.log("解析中:", name, address);
+                            geocoder.geocode({ address: "東京都町田市" + address }, (results, status) => {
+                                if (status === 'OK') {
+                                    new google.maps.marker.AdvancedMarkerElement({
+                                        map: map,
+                                        position: results[0].geometry.location,
+                                        title: name
+                                    });
+                                    console.log("ピン設置:", name);
                                 }
                             });
                         }
                     });
-
-                    // Papa.parse(CSV_URL, {
-                    //     download: true,
-                    //     header: false, // ← あえて false にして、1行目もデータとして扱う
-                    //     complete: function(results) {
-                    //         // 0番目がNo、1番目が名称、2番目が住所...という順番で指定
-                    //         results.data.slice(1).forEach(row => { 
-                    //             const name = row[1];    // 2列目：名称
-                    //             const address = row[2]; // 3列目：所在地
-                                
-                    //             if (address) {
-                    //                 // geocode処理へ...
-                    //                 console.log("読み込み中:", name, address);
-                    //             }
-                    //         });
-                    //     }
-                    // });
-
-                    // console.log("取得データサンプル:", results.data[0]);
-
-                    // // 負荷を避けるため、まずは最初の5件だけでテスト
-                    // results.data.slice(0, 5).forEach(shop => {
-                    //     if (shop['所在地']) {
-                    //         const address = "東京都町田市" + shop['所在地'];
-                    //         geocoder.geocode({ address: address }, (results, status) => {
-                    //             if (status === 'OK') {
-                    //                 new google.maps.marker.AdvancedMarkerElement({
-                    //                     map: map,
-                    //                     position: results[0].geometry.location,
-                    //                     title: shop['名称']
-                    //                 });
-                    //                 console.log("ピンを立てました:", shop['名称']);
-                    //             } else {
-                    //                 console.error("ジオコーディング失敗:", status, address);
-                    //             }
-                    //         });
-                    //     }
-                    // });
-                }
-            });
+                })
+                .catch(error => console.error("データ取得エラー:", error));
         }
 
-
-        // // 3. 地図の初期化関数を最新形式に対応させる
-        // async function initMap() {
-        //     // 必要なライブラリをロード
-        //     const { Map } = await google.maps.importLibrary("maps");
-        //     const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-        //     const { Geocoder } = await google.maps.importLibrary("geocoding");
-
-        //     const map = new Map(document.getElementById('map'), {
-        //         zoom: 13,
-        //         center: { lat: 35.5467, lng: 139.4464 },
-        //         mapId: "DEMO_MAP_ID", // AdvancedMarkerを使う場合に必要（適当な文字列でOK）
-        //     });
-
-        //     const geocoder = new Geocoder();
-
-        //     // ここから下（CSV取得とループ処理）は前のコードと同じでOK
-        //     // ※CSV_URL は GASのURL または ローカルファイル名に書き換えてください
-        //     const CSV_URL = 'https://script.google.com/macros/s/AKfycbxFtdytsEDxmCEWyUpAMG8Dn2f9W8OrNuZ_iS6i7xIrq2u4CPkgGKs9XxOlAyypVv8C_A/exec'; 
-
-        //     Papa.parse(CSV_URL, {
-        //         download: true,
-        //         header: true,
-        //         complete: function(results) {
-        //             // テスト用に最初の10件だけで試すのがおすすめ
-        //             results.data.slice(0, 10).forEach(shop => {
-        //                 if (shop['所在地']) {
-        //                     geocodeAddress(geocoder, map, shop);
-        //                 }
-        //             });
-        //         }
-        //     });
-        // }
 
         function geocodeAddress(geocoder, map, shop) {
             const address = "東京都町田市" + shop['所在地'];
